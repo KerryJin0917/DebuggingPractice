@@ -13,14 +13,17 @@ behind them.
 | [`02_problem1_debugging_walkthrough.md`](02_problem1_debugging_walkthrough.md) | Problem 1 (watch-list bugs), bug by bug, with the real test output at each stage, then finding the hidden bugs from the contract | **Yes** |
 | [`03_problem2_feature_walkthrough.md`](03_problem2_feature_walkthrough.md) | Problem 2 (recommendations): spec to checklist to staged build, including a "first draft" that passes 6/6 visible tests but fails 3 hidden ones | **Yes** |
 | [`04_django_drf_bug_patterns.md`](04_django_drf_bug_patterns.md) | Cheat sheet of Django/DRF bug shapes, what each looks like in a test failure, and where to look | No |
+| [`05_debugging_loop_step_by_step.md`](05_debugging_loop_step_by_step.md) | **Part A:** the loop as exact steps and terminal commands: running single tests, reading failures, `--pdb`, `breakpoint()` and pdb commands, print debugging, `python -c`, curl, VS Code. **Part B:** solves Problem 3 with a different tool for each bug, using real debugger sessions | Part A: no. Part B: **yes** |
 
 Suggested order:
 
-1. Read `01_method.md` and `04_django_drf_bug_patterns.md` (15 min).
-2. Attempt Problem 1 for 60 minutes, then read `02_...`.
-3. Attempt Problem 2 for 60 minutes, then read `03_...`.
-4. Reset (`git checkout -- problem1_watchlist_debug problem2_recommendations_feature`)
-   and redo both a few days later. Aim to clear the 6 visible tests in under 30 minutes.
+1. Read `05_...` **Part A**, then do **Problem 3** with it open next to you.
+   Afterward, compare your solve with Part B.
+2. Read `01_method.md` and `04_django_drf_bug_patterns.md` (15 min).
+3. Attempt Problem 1 for 60 minutes, then read `02_...`.
+4. Attempt Problem 2 for 60 minutes, then read `03_...`.
+5. Reset (`git checkout -- problem1_watchlist_debug problem2_recommendations_feature problem3_reviews_moderation_debug`)
+   and redo them a few days later. Aim to clear the 6 visible tests in under 30 minutes.
 
 Every output block in these files was copied from a real run of this repo
 (paths shortened), so what you see in your terminal should match.

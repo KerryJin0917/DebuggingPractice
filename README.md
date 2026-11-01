@@ -8,12 +8,15 @@ only sees one file, 6 visible acceptance tests, and hidden grader tests.
 |---|---|---|---|
 | [`problem1_watchlist_debug/`](problem1_watchlist_debug/README.md) | **Debugging only** | Movie watch-list CRUD API. A QA bug list names 3 issues, and more are hidden (including a broken test helper). | 6 / 7 |
 | [`problem2_recommendations_feature/`](problem2_recommendations_feature/README.md) | **Feature only** | Build `GET /api/ratings/recommendations/user` ("Recommended For You") from a written spec. | 6 / 10 |
+| [`problem3_reviews_moderation_debug/`](problem3_reviews_moderation_debug/README.md) | **Debugging only** (good first problem) | Movie search, reviews, and content moderation (403 on banned words, violation count, flag after 3 strikes). Comes with a step-by-step debugger guide. | 6 / 6 |
 
 ## Tutorial
 
 [`tutorial/`](tutorial/README.md) walks through the method (Reproduce → Locate → Isolate →
 Patch → Verify), solves both problems step by step with real test output, and
-includes a Django/DRF bug-pattern cheat sheet. The walkthroughs are spoilers:
+includes a Django/DRF bug-pattern cheat sheet. New to this? Start with
+`tutorial/05_debugging_loop_step_by_step.md` Part A (terminal commands, `--pdb`,
+`breakpoint()`), and use Problem 3 as your first problem. The walkthroughs are spoilers:
 read `tutorial/01_method.md` first and attempt each problem before opening its
 walkthrough.
 
@@ -37,5 +40,4 @@ python manage.py test tests
    Those count too.
 5. Only then open `SOLUTION/`.
 
-To start over: `git checkout -- problem1_watchlist_debug` (or
-`problem2_recommendations_feature`).
+To start over: `git checkout -- <problem folder>`.
