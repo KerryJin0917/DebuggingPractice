@@ -9,6 +9,14 @@ only sees one file, 6 visible acceptance tests, and hidden grader tests.
 | [`problem1_watchlist_debug/`](problem1_watchlist_debug/README.md) | **Debugging only** | Movie watch-list CRUD API. A QA bug list names 3 issues, and more are hidden (including a broken test helper). | 6 / 7 |
 | [`problem2_recommendations_feature/`](problem2_recommendations_feature/README.md) | **Feature only** | Build `GET /api/ratings/recommendations/user` ("Recommended For You") from a written spec. | 6 / 10 |
 
+## Tutorial
+
+[`tutorial/`](tutorial/README.md) walks through the method (Reproduce → Locate → Isolate →
+Patch → Verify), solves both problems step by step with real test output, and
+includes a Django/DRF bug-pattern cheat sheet. The walkthroughs are spoilers:
+read `tutorial/01_method.md` first and attempt each problem before opening its
+walkthrough.
+
 ## Setup
 
 ```bash
