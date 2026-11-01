@@ -1,0 +1,115 @@
+diff -ru -x __pycache__ -x '*.sqlite3' a/movies/authentication.py b/movies/authentication.py
+--- a/movies/authentication.py	2026-11-01 01:13:24.293149270 +0000
++++ b/movies/authentication.py	2026-11-01 01:14:11.332715713 +0000
+@@ -21,3 +21,7 @@
+         except (ValueError, User.DoesNotExist):
+             raise exceptions.AuthenticationFailed("Invalid X-User-Id header.")
+         return (user, None)
++
++    def authenticate_header(self, request):
++        # Any non-empty value makes DRF answer 401 instead of 403.
++        return self.header
+diff -ru -x __pycache__ -x '*.sqlite3' a/movies/serializers.py b/movies/serializers.py
+--- a/movies/serializers.py	2026-11-01 01:13:24.293246729 +0000
++++ b/movies/serializers.py	2026-11-01 01:14:11.332605002 +0000
+@@ -10,7 +10,7 @@
+ 
+ 
+ class WatchListSerializer(serializers.ModelSerializer):
+-    name = serializers.CharField(max_length=100, allow_blank=True)
++    name = serializers.CharField(max_length=100)
+     movies = MovieSerializer(many=True, read_only=True)
+     movie_count = serializers.SerializerMethodField()
+ 
+diff -ru -x __pycache__ -x '*.sqlite3' a/movies/services.py b/movies/services.py
+--- a/movies/services.py	2026-11-01 01:13:24.297355837 +0000
++++ b/movies/services.py	2026-11-01 01:14:11.331603846 +0000
+@@ -14,7 +14,7 @@
+ 
+ def get_watchlist_for_user(user, watchlist_id):
+     """Return the user's watch list with this id, or None if there isn't one."""
+-    return WatchList.objects.filter(pk=watchlist_id).first()
++    return WatchList.objects.filter(pk=watchlist_id, owner=user).first()
+ 
+ 
+ def get_movie(movie_id):
+@@ -32,7 +32,7 @@
+     for field in ("name", "description"):
+         if field in data:
+             setattr(watchlist, field, data[field])
+-    watchlist.save(update_fields=["description", "updated_at"])
++    watchlist.save(update_fields=["name", "description", "updated_at"])
+     return watchlist
+ 
+ 
+@@ -42,9 +42,9 @@
+ 
+ def add_movie(watchlist, movie_id):
+     movie = get_movie(movie_id)
+-    if WatchListEntry.objects.filter(watchlist=watchlist, movie_id=watchlist.id).exists():
++    if WatchListEntry.objects.filter(watchlist=watchlist, movie=movie).exists():
+         raise Conflict("Movie is already in this watch list.")
+-    entry = WatchListEntry(watchlist=watchlist, movie=movie)
++    entry = WatchListEntry.objects.create(watchlist=watchlist, movie=movie)
+     return entry
+ 
+ 
+@@ -52,7 +52,7 @@
+     entry = WatchListEntry.objects.filter(watchlist=watchlist, movie_id=movie_id).first()
+     if entry is None:
+         raise NotFound("Movie is not in this watch list.")
+-    entry.delete
++    entry.delete()
+ 
+ 
+ @transaction.atomic
+@@ -63,8 +63,7 @@
+     skipped on remove. An unknown movie id in ``add_ids`` aborts the whole
+     request with 404.
+     """
+-    for i in range(1, len(add_ids)):
+-        movie_id = add_ids[i]
++    for movie_id in add_ids:
+         if not WatchListEntry.objects.filter(watchlist=watchlist, movie_id=movie_id).exists():
+             add_movie(watchlist, movie_id)
+ 
+diff -ru -x __pycache__ -x '*.sqlite3' a/movies/views.py b/movies/views.py
+--- a/movies/views.py	2026-11-01 01:13:24.299737884 +0000
++++ b/movies/views.py	2026-11-01 01:14:11.332489476 +0000
+@@ -38,7 +38,7 @@
+         serializer = WatchListSerializer(data=request.data)
+         serializer.is_valid(raise_exception=True)
+         watchlist = services.create_watchlist(request.user, serializer.validated_data)
+-        return Response(WatchListSerializer(watchlist).data, status=status.HTTP_200_OK)
++        return Response(WatchListSerializer(watchlist).data, status=status.HTTP_201_CREATED)
+ 
+ 
+ class WatchListDetailView(APIView):
+@@ -56,12 +56,12 @@
+     def delete(self, request, watchlist_id):
+         watchlist = _load_watchlist(request, watchlist_id)
+         services.delete_watchlist(watchlist)
+-        return Response({"detail": "Watch list deleted."}, status=status.HTTP_200_OK)
++        return Response(status=status.HTTP_204_NO_CONTENT)
+ 
+ 
+ class WatchListMoviesView(APIView):
+     def post(self, request, watchlist_id):
+-        watchlist = services.get_watchlist_for_user(request.user, watchlist_id)
++        watchlist = _load_watchlist(request, watchlist_id)
+         serializer = AddMovieSerializer(data=request.data)
+         serializer.is_valid(raise_exception=True)
+         services.add_movie(watchlist, serializer.validated_data["movie_id"])
+diff -ru -x __pycache__ -x '*.sqlite3' a/tests/factories.py b/tests/factories.py
+--- a/tests/factories.py	2026-11-01 01:13:52.312582817 +0000
++++ b/tests/factories.py	2026-11-01 01:13:59.304695317 +0000
+@@ -8,6 +8,9 @@
+     return get_user_model().objects.create(username=username)
+ 
+ 
++DEFAULT_GENRE = "Drama"
++
++
+ def make_movie(title="Inception", genre=DEFAULT_GENRE, release_year=2010):
+     return Movie.objects.create(title=title, genre=genre, release_year=release_year)
+ 
