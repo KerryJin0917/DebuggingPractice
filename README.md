@@ -9,6 +9,7 @@ only sees one file, 6 visible acceptance tests, and hidden grader tests.
 | [`problem1_watchlist_debug/`](problem1_watchlist_debug/README.md) | **Debugging only** | Movie watch-list CRUD API. A QA bug list names 3 issues, and more are hidden (including a broken test helper). | 6 / 7 |
 | [`problem2_recommendations_feature/`](problem2_recommendations_feature/README.md) | **Feature only** | Build `GET /api/ratings/recommendations/user` ("Recommended For You") from a written spec. | 6 / 10 |
 | [`problem3_reviews_moderation_debug/`](problem3_reviews_moderation_debug/README.md) | **Debugging only** (good first problem) | Movie search, reviews, and content moderation (403 on banned words, violation count, flag after 3 strikes). Comes with a step-by-step debugger guide. | 6 / 6 |
+| [`problem4_blog_posts_debug/`](problem4_blog_posts_debug/README.md) | **Debugging only** (modeled on the HackerRank mock) | Django + DRF blog: repair `POST /api/posts/` (`_id`, nested `author`, X-User-Id header, My Posts). pytest, like the mock. | **2** / 15 |
 
 ## Tutorial
 

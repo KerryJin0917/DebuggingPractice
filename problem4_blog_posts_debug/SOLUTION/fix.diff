@@ -1,0 +1,137 @@
+diff -ru -x __pycache__ -x '*.sqlite3' -x .pytest_cache a/blog/urls.py b/blog/urls.py
+--- a/blog/urls.py	2026-11-01 21:08:10.258435344 +0000
++++ b/blog/urls.py	2026-11-01 21:09:26.902799665 +0000
+@@ -4,6 +4,6 @@
+ 
+ urlpatterns = [
+     path("posts/", views.posts, name="posts"),
+-    path("posts/<str:post_id>/", views.post_detail, name="post-detail"),
+     path("posts/my-posts/", views.get_my_posts, name="my-posts"),
++    path("posts/<str:post_id>/", views.post_detail, name="post-detail"),
+ ]
+diff -ru -x __pycache__ -x '*.sqlite3' -x .pytest_cache a/blog/utils.py b/blog/utils.py
+--- a/blog/utils.py	2026-11-01 21:08:10.254570089 +0000
++++ b/blog/utils.py	2026-11-01 21:10:03.588794864 +0000
+@@ -16,16 +16,18 @@
+ 
+ def make_excerpt(content):
+     """Default excerpt: the first 150 characters, with "..." only if the content was cut."""
++    if len(content) <= EXCERPT_LENGTH:
++        return content
+     return content[:EXCERPT_LENGTH] + "..."
+ 
+ 
+ def is_author(post, user_id):
+-    return post.author_id == user_id
++    return user_id is not None and str(post.author_id) == str(user_id)
+ 
+ 
+ def serialize_user(user):
+     return {
+-        "_id": user.id,
++        "_id": str(user.id),
+         "name": user.name,
+         "email": user.email,
+         "bio": user.bio,
+@@ -34,9 +36,10 @@
+ 
+ def serialize_post(post):
+     return {
+-        "id": post.id,
++        "_id": str(post.id),
+         "title": post.title,
+         "content": post.content,
++        "excerpt": post.excerpt,
+         "category": post.category,
+         "tags": post.tags,
+         "readTime": post.readTime,
+diff -ru -x __pycache__ -x '*.sqlite3' -x .pytest_cache a/blog/views.py b/blog/views.py
+--- a/blog/views.py	2026-11-01 21:08:10.256876903 +0000
++++ b/blog/views.py	2026-11-01 21:10:03.588428173 +0000
+@@ -29,7 +29,7 @@
+ def list_posts(request):
+     """Public feed: published posts only, newest first. Optional ?category= filter."""
+     try:
+-        queryset = Post.objects.select_related("author").order_by("-created_at", "-id")
++        queryset = Post.objects.select_related("author").filter(published=True).order_by("-created_at", "-id")
+         category = request.query_params.get("category")
+         if category:
+             queryset = queryset.filter(category=category)
+@@ -44,21 +44,24 @@
+         if not user_id:
+             return Response({"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+ 
+-        if not title or not content or not category:
+-            return Response(
+-                {"message": "Title, content, and category are required"},
+-                status=status.HTTP_400_BAD_REQUEST,
+-            )
+-
+         data = request.data
+         title = data.get("title")
+         content = data.get("content")
+         category = data.get("category")
+         excerpt = data.get("excerpt")
+-        tags = data.get("tags")
++        tags = data.get("tags") or []
+         readTime = data.get("readTime")
+ 
+-        if readTime:
++        if not title or not content or not category:
++            return Response(
++                {"message": "Title, content, and category are required"},
++                status=status.HTTP_400_BAD_REQUEST,
++            )
++
++        if category not in VALID_CATEGORIES:
++            return Response({"message": "Invalid category"}, status=status.HTTP_400_BAD_REQUEST)
++
++        if not readTime:
+             readTime = calculate_read_time(content)
+ 
+         if not excerpt:
+@@ -81,7 +84,7 @@
+         post.save()
+ 
+         return Response(
+-            {"message": "Post created successfully", "post": post},
++            {"message": "Post created successfully", "post": serialize_post(post)},
+             status=status.HTTP_201_CREATED,
+         )
+     except Exception as e:
+@@ -100,21 +103,9 @@
+         if not user_id:
+             return Response({"message": "Not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+ 
+-        my_posts = Post.objects.filter(author_id=user_id, published=True).order_by("-created_at", "-id")
++        my_posts = Post.objects.filter(author_id=user_id).order_by("-created_at", "-id")
+ 
+-        posts_data = []
+-        for p in my_posts:
+-            posts_data.append({
+-                "id": p.id,
+-                "title": p.title,
+-                "excerpt": p.excerpt,
+-                "category": p.category,
+-                "tags": p.tags,
+-                "readTime": p.readTime,
+-                "published": p.published,
+-                "createdAt": p.created_at.isoformat(),
+-            })
+-        return Response({"posts": posts_data}, status=status.HTTP_200_OK)
++        return Response({"posts": [serialize_post(p) for p in my_posts]}, status=status.HTTP_200_OK)
+     except Exception as e:
+         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+@@ -134,7 +125,10 @@
+ 
+ def get_post(request, post_id):
+     try:
+-        post = Post.objects.select_related("author").get(id=post_id)
++        try:
++            post = Post.objects.select_related("author").get(id=post_id)
++        except Post.DoesNotExist:
++            return Response({"message": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+         return Response({"post": serialize_post(post)})
+     except Exception as e:
+         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
