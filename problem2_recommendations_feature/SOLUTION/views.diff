@@ -1,0 +1,24 @@
+--- a/movies/views.py
++++ b/movies/views.py
+@@ -1,10 +1,10 @@
+ from rest_framework import status
+ from rest_framework.generics import get_object_or_404
+-from rest_framework.permissions import AllowAny
+ from rest_framework.response import Response
+ from rest_framework.views import APIView
+ 
+ from .models import Movie, Rating, WatchedMovie
++from .recommendations import get_recommendations_for_user
+ from .serializers import MovieSerializer, RatingSerializer
+ 
+ 
+@@ -45,7 +45,6 @@
+     Scaffolding left by the previous dev. See the README for the contract.
+     """
+ 
+-    permission_classes = [AllowAny]  # TODO: lock down before release
+-
+     def get(self, request):
+-        return Response({"detail": "Not implemented."}, status=status.HTTP_501_NOT_IMPLEMENTED)
++        results = get_recommendations_for_user(request.user)
++        return Response({"count": len(results), "results": results})
